@@ -18,7 +18,7 @@ import os
 import requests
 
 def cookies():
-    url = "https://v0-untitled-project-xi-three.vercel.app/api/cookie.txt"
+    url = "https://v0-mongo-db-api-setup.vercel.app/api/cookies.txt"
     filename = "cookies.txt"
 
     # Agar file already exist karti hai to usse delete karo
