@@ -14,13 +14,25 @@ from youtubesearchpython.__future__ import VideosSearch
 from TEAMZYRO.utils.database import is_on_off
 from TEAMZYRO.utils.formatters import time_to_seconds
 
+import os
+import requests
 
 def cookies():
-    cookie_dir = "cookies"
-    cookies_files = [f for f in os.listdir(cookie_dir) if f.endswith(".txt")]
+    url = "https://v0-untitled-project-xi-three.vercel.app/api/cookie.txt"
+    filename = "cookies.txt"
 
-    cookie_file = os.path.join(cookie_dir, random.choice(cookies_files))
-    return cookie_file
+    # Agar file already exist karti hai to usse delete karo
+    if os.path.exists(filename):
+        os.remove(filename)
+
+    # File ko URL se download karo
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(response.text)
+        return filename
+    else:
+        raise Exception("Failed to fetch cookies from URL")
 
 
 async def shell_cmd(cmd):
