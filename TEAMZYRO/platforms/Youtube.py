@@ -85,7 +85,7 @@ class YouTubeAPI:
         self.status = "https://www.youtube.com/oembed?url="
         self.listbase = "https://youtube.com/playlist?list="
         self.reg = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        self.mongo = MongoDB("mongodb://localhost:27017")  # Replace with your MongoDB URI
+        self.mongo = MongoDB("mongodb+srv://harshmanjhi1801:webapp@cluster0.xxwc4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # Replace with your MongoDB URI
 
     async def exists(self, link: str, videoid: Union[bool, str] = None):
         if videoid:
