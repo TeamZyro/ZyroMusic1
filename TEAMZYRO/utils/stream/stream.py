@@ -15,7 +15,6 @@ from TEAMZYRO.utils.pastebin import ZYROBin
 from TEAMZYRO.utils.stream.queue import put_queue, put_queue_index
 from TEAMZYRO.utils.thumbnails import get_thumb
 
-
 async def stream(
     _,
     mystic,
@@ -308,6 +307,12 @@ async def stream(
         thumbnail = result["thumb"]
         duration_min = "Live Track"
         status = True if video else None
+        try:
+            file_path, direct = await YouTube.download(
+                vidid, mystic, videoid=True, video=status
+            )
+        except:
+            raise AssistantErr(_["play_14"])
         if await is_active_chat(chat_id):
             await put_queue(
                 chat_id,
@@ -330,9 +335,6 @@ async def stream(
         else:
             if not forceplay:
                 db[chat_id] = []
-            n, file_path = await YouTube.video(link)
-            if n == 0:
-                raise AssistantErr(_["str_3"])
             await ZYRO.join_call(
                 chat_id,
                 original_chat_id,
