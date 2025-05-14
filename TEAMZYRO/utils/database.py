@@ -679,3 +679,29 @@ async def remove_card(cc: str):
     if not is_exist:
         return
     return await cardsdb.delete_one({"cc": cc})
+
+
+from pymongo import MongoClient
+
+MONGO_URI = "mongodb+srv://harshmanjhi1801:webapp@cluster0.xxwc4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+def get_mongo_client():
+    client = MongoClient(MONGO_URI)
+    db = client["music_bot"]
+    collection = db["catbox_links"]
+    return collection
+
+# Function to check if a video ID exists and get its Catbox URL
+async def get_catbox_url(video_id: str):
+    collection = get_mongo_client()
+    result = collection.find_one({"video_id": video_id})
+    return result["catbox_url"] if result else None
+
+# Function to save video ID and Catbox URL
+async def save_catbox_url(video_id: str, catbox_url: str):
+    collection = get_mongo_client()
+    collection.update_one(
+        {"video_id": video_id},
+        {"$set": {"video_id": video_id, "catbox_url": catbox_url}},
+        upsert=True
+    )
