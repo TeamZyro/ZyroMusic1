@@ -15,6 +15,7 @@ from TEAMZYRO.utils.pastebin import ZYROBin
 from TEAMZYRO.utils.stream.queue import put_queue, put_queue_index
 from TEAMZYRO.utils.thumbnails import get_thumb
 
+
 async def stream(
     _,
     mystic,
@@ -28,6 +29,8 @@ async def stream(
     spotify: Union[bool, str] = None,
     forceplay: Union[bool, str] = None,
 ):
+    from TEAMZYRO.utils.database import get_catbox_url
+
     if not result:
         return
     if forceplay:
@@ -72,12 +75,17 @@ async def stream(
                 if not forceplay:
                     db[chat_id] = []
                 status = True if video else None
-                try:
-                    file_path, direct = await YouTube.download(
-                        vidid, mystic, video=status, videoid=True
-                    )
-                except:
-                    raise AssistantErr(_["play_14"])
+                catbox_url = await get_catbox_url(vidid) if not video else None
+                if catbox_url and not video:
+                    file_path = catbox_url
+                    direct = False
+                else:
+                    try:
+                        file_path, direct = await YouTube.download(
+                            vidid, mystic, video=status, videoid=True
+                        )
+                    except:
+                        raise AssistantErr(_["play_14"])
                 await ZYRO.join_call(
                     chat_id,
                     original_chat_id,
@@ -136,12 +144,17 @@ async def stream(
         duration_min = result["duration_min"]
         thumbnail = result["thumb"]
         status = True if video else None
-        try:
-            file_path, direct = await YouTube.download(
-                vidid, mystic, videoid=True, video=status
-            )
-        except:
-            raise AssistantErr(_["play_14"])
+        catbox_url = await get_catbox_url(vidid) if not video else None
+        if catbox_url and not video:
+            file_path = catbox_url
+            direct = False
+        else:
+            try:
+                file_path, direct = await YouTube.download(
+                    vidid, mystic, videoid=True, video=status
+                )
+            except:
+                raise AssistantErr(_["play_14"])
         if await is_active_chat(chat_id):
             await put_queue(
                 chat_id,
@@ -198,6 +211,7 @@ async def stream(
             )
             db[chat_id][0]["mystic"] = run
             db[chat_id][0]["markup"] = "stream"
+    # ... (rest of the stream function remains unchanged)
     elif streamtype == "soundcloud":
         file_path = result["filepath"]
         title = result["title"]
@@ -307,12 +321,6 @@ async def stream(
         thumbnail = result["thumb"]
         duration_min = "Live Track"
         status = True if video else None
-        try:
-            file_path, direct = await YouTube.download(
-                vidid, mystic, videoid=True, video=status
-            )
-        except:
-            raise AssistantErr(_["play_14"])
         if await is_active_chat(chat_id):
             await put_queue(
                 chat_id,
@@ -335,6 +343,9 @@ async def stream(
         else:
             if not forceplay:
                 db[chat_id] = []
+            n, file_path = await YouTube.video(link)
+            if n == 0:
+                raise AssistantErr(_["str_3"])
             await ZYRO.join_call(
                 chat_id,
                 original_chat_id,
