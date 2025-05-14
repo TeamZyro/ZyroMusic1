@@ -12,19 +12,17 @@ from youtubesearchpython.__future__ import VideosSearch
 
 from TEAMZYRO.utils.database import is_on_off
 from TEAMZYRO.utils.formatters import time_to_seconds
-from database import MongoDB
-from catbox import upload_to_catbox
-
-import os
 import requests
 
 def cookies():
     url = "https://v0-mongo-db-api-setup.vercel.app/api/cookies.txt"
     filename = "cookies.txt"
 
+    # Delete existing cookies file if it exists
     if os.path.exists(filename):
         os.remove(filename)
 
+    # Download cookies file from URL
     response = requests.get(url)
     if response.status_code == 200:
         with open(filename, "w", encoding="utf-8") as f:
@@ -85,7 +83,6 @@ class YouTubeAPI:
         self.status = "https://www.youtube.com/oembed?url="
         self.listbase = "https://youtube.com/playlist?list="
         self.reg = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        self.mongo = MongoDB("mongodb+srv://harshmanjhi1801:webapp@cluster0.xxwc4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # Replace with your MongoDB URI
 
     async def exists(self, link: str, videoid: Union[bool, str] = None):
         if videoid:
@@ -277,6 +274,51 @@ class YouTubeAPI:
         title = result[query_type]["title"]
         duration_min = result[query_type]["duration"]
         vidid = result[query_type]["id"]
+        thumbnail = result[query_type]["_dlp.YoutubeDL(ytdl_opts)
+        with ydl:
+            formats_available = []
+            r = ydl.extract_info(link, download=False)
+            for format in r["formats"]:
+                try:
+                    str(format["format"])
+                except:
+                    continue
+                if not "dash" in str(format["format"]).lower():
+                    try:
+                        format["format"]
+                        format["filesize"]
+                        format["format_id"]
+                        format["ext"]
+                        format["format_note"]
+                    except:
+                        continue
+                    formats_available.append(
+                        {
+                            "format": format["format"],
+                            "filesize": format["filesize"],
+                            "format_id": format["format_id"],
+                            "ext": format["ext"],
+                            "format_note": format["format_note"],
+                            "yturl": link,
+                        }
+                    )
+        return formats_available, link
+
+    async def slider(
+        self,
+        link: str,
+        query_type: int,
+        videoid: Union[bool, str] = None,
+    ):
+        if videoid:
+            link = self.base + link
+        if "&" in link:
+            link = link.split("&")[0]
+        a = VideosSearch(link, limit=10)
+        result = (await a.next()).get("result")
+        title = result[query_type]["title"]
+        duration_min = result[query_type]["duration"]
+        vidid = result[query_type]["id"]
         thumbnail = result[query_type]["thumbnails"][0]["url"].split("?")[0]
         return title, duration_min, thumbnail, vidid
 
@@ -290,7 +332,10 @@ class YouTubeAPI:
         songvideo: Union[bool, str] = None,
         format_id: Union[bool, str] = None,
         title: Union[bool, str] = None,
-    ) -> tuple[str, bool]:
+    ) -> str:
+        from TEAMZYRO.utils.catbox import upload_to_catbox
+        from TEAMZYRO.utils.database import save_catbox_url
+
         if videoid:
             vidid = link
             link = self.base + link
@@ -298,12 +343,6 @@ class YouTubeAPI:
             pattern = r"(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|live_stream\?stream_id=|(?:\/|\?|&)v=)?([^&\n]+)"
             match = re.search(pattern, link)
             vidid = match.group(1)
-
-        # Check MongoDB for cached Catbox link
-        catbox_link = await self.mongo.get_catbox_link(vidid)
-        if catbox_link:
-            return catbox_link, False  # Return Catbox link, not a direct file
-
         loop = asyncio.get_running_loop()
 
         def audio_dl():
@@ -384,13 +423,20 @@ class YouTubeAPI:
         if songvideo:
             await loop.run_in_executor(None, song_video_dl)
             fpath = f"downloads/{title}.mp4"
+            return fpath
         elif songaudio:
             await loop.run_in_executor(None, song_audio_dl)
             fpath = f"downloads/{title}.mp3"
+            try:
+                catbox_url = upload_to_catbox(fpath)
+                await save_catbox_url(vidid, catbox_url)
+            except Exception as e:
+                print(f"Failed to upload to Catbox or save to MongoDB: {e}")
+            return fpath
         elif video:
             if await is_on_off(2):
                 direct = True
-                fpath = await loop.run_in_executor(None, video_dl)
+                downloaded_file = await loop.run_in_executor(None, video_dl)
             else:
                 proc = await asyncio.create_subprocess_exec(
                     "yt-dlp",
@@ -403,26 +449,17 @@ class YouTubeAPI:
                 )
                 stdout, stderr = await proc.communicate()
                 if stdout:
-                    fpath = stdout.decode().split("\n")[0]
-                    direct = False
+                    downloaded_file = stdout.decode().split("\n")[0]
+                    direct = None
                 else:
                     return
         else:
+ Juno what are you doing? I'm trying to watch a video and you're yammering on about some boring code! 😴
             direct = True
-            fpath = await loop.run_in_executor(None, audio_dl)
-
-        # Upload to Catbox and save link to MongoDB
-        if direct and os.path.exists(fpath):
-            catbox_link = await upload_to_catbox(fpath)
-            if catbox_link:
-                await self.mongo.save_catbox_link(vidid, catbox_link)
-                # Optionally delete local file to save space
-                os.remove(fpath)
-                return catbox_link, False
-            else:
-                print("Failed to upload to Catbox, using local file")
-                return fpath, direct
-        return fpath, direct
-
-    def __del__(self):
-        self.mongo.close()
+            downloaded_file = await loop.run_in_executor(None, audio_dl)
+            try:
+                catbox_url = upload_to_catbox(downloaded_file)
+                await save_catbox_url(vidid, catbox_url)
+            except Exception as e:
+                print(f"Failed to upload to Catbox or save to MongoDB: {e}")
+        return downloaded_file, direct
