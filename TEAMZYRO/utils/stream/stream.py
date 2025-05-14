@@ -1,7 +1,7 @@
 import os
 from random import randint
 from typing import Union
-
+import requests
 from pyrogram.types import InlineKeyboardMarkup
 
 import config
