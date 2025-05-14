@@ -682,26 +682,44 @@ async def remove_card(cc: str):
 
 
 from pymongo import MongoClient
+from pymongo.errors import ServerDisconnectedError, ConnectionFailure
+import asyncio
 
 MONGO_URI = "mongodb+srv://harshmanjhi1801:webapp@cluster0.xxwc4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 def get_mongo_client():
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(
+        MONGO_URI,
+        maxPoolSize=50,  # Increase connection pool size
+        connectTimeoutMS=10000,  # 10 seconds timeout
+        socketTimeoutMS=10000,
+        serverSelectionTimeoutMS=10000,
+        retryWrites=True,  # Retry writes on failure
+        retryReads=True,   # Retry reads on failure
+    )
     db = client["music_bot"]
     collection = db["catbox_links"]
     return collection
 
-# Function to check if a video ID exists and get its Catbox URL
 async def get_catbox_url(video_id: str):
-    collection = get_mongo_client()
-    result = collection.find_one({"video_id": video_id})
-    return result["catbox_url"] if result else None
+    try:
+        collection = get_mongo_client()
+        result = collection.find_one({"video_id": video_id})
+        return result["catbox_url"] if result else None
+    except (ServerDisconnectedError, ConnectionFailure) as e:
+        print(f"MongoDB connection error: {e}")
+        await asyncio.sleep(1)  # Wait before retrying
+        return await get_catbox_url(video_id)  # Retry once
 
-# Function to save video ID and Catbox URL
 async def save_catbox_url(video_id: str, catbox_url: str):
-    collection = get_mongo_client()
-    collection.update_one(
-        {"video_id": video_id},
-        {"$set": {"video_id": video_id, "catbox_url": catbox_url}},
-        upsert=True
-    )
+    try:
+        collection = get_mongo_client()
+        collection.update_one(
+            {"video_id": video_id},
+            {"$set": {"video_id": video_id, "catbox_url": catbox_url}},
+            upsert=True
+        )
+    except (ServerDisconnectedError, ConnectionFailure) as e:
+        print(f"MongoDB connection error: {e}")
+        await asyncio.sleep(1)  # Wait before retrying
+        return await save_catbox_url(video_id, catbox_url)  # Retry once
