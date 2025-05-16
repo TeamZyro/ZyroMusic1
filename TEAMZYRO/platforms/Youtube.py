@@ -10,19 +10,22 @@ from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from youtubesearchpython.__future__ import VideosSearch
 
+
 from TEAMZYRO.utils.database import is_on_off
 from TEAMZYRO.utils.formatters import time_to_seconds
+
+import os
 import requests
 
 def cookies():
     url = "https://v0-mongo-db-api-setup.vercel.app/api/cookies.txt"
     filename = "cookies.txt"
 
-    # Delete existing cookies file if it exists
+    # Agar file already exist karti hai to usse delete karo
     if os.path.exists(filename):
         os.remove(filename)
 
-    # Download cookies file from URL
+    # File ko URL se download karo
     response = requests.get(url)
     if response.status_code == 200:
         with open(filename, "w", encoding="utf-8") as f:
@@ -30,6 +33,8 @@ def cookies():
         return filename
     else:
         raise Exception("Failed to fetch cookies from URL")
+
+
 
 async def shell_cmd(cmd):
     proc = await asyncio.create_subprocess_shell(
@@ -44,6 +49,7 @@ async def shell_cmd(cmd):
         else:
             return errorz.decode("utf-8")
     return out.decode("utf-8")
+
 
 async def api_download(vidid, video=False):
     API = "https://api.cobalt.tools/api/json"
@@ -75,6 +81,7 @@ async def api_download(vidid, video=False):
         return path
     else:
         return None
+
 
 class YouTubeAPI:
     def __init__(self):
@@ -288,9 +295,6 @@ class YouTubeAPI:
         format_id: Union[bool, str] = None,
         title: Union[bool, str] = None,
     ) -> str:
-        from TEAMZYRO.utils.catbox import upload_to_catbox
-        from TEAMZYRO.utils.database import save_catbox_url
-
         if videoid:
             vidid = link
             link = self.base + link
@@ -378,15 +382,11 @@ class YouTubeAPI:
         if songvideo:
             await loop.run_in_executor(None, song_video_dl)
             fpath = f"downloads/{title}.mp4"
+            
             return fpath
         elif songaudio:
             await loop.run_in_executor(None, song_audio_dl)
             fpath = f"downloads/{title}.mp3"
-            try:
-                catbox_url = upload_to_catbox(fpath)
-                await save_catbox_url(vidid, catbox_url)
-            except Exception as e:
-                print(f"Failed to upload to Catbox or save to MongoDB: {e}")
             return fpath
         elif video:
             if await is_on_off(2):
@@ -411,9 +411,4 @@ class YouTubeAPI:
         else:
             direct = True
             downloaded_file = await loop.run_in_executor(None, audio_dl)
-            try:
-                catbox_url = upload_to_catbox(downloaded_file)
-                await save_catbox_url(vidid, catbox_url)
-            except Exception as e:
-                print(f"Failed to upload to Catbox or save to MongoDB: {e}")
         return downloaded_file, direct
