@@ -45,7 +45,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 # ----------------------------------------------------------------
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/MrZyro/ZyroMusic",
+    "https://github.com",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv(
@@ -59,8 +59,8 @@ GIT_TOKEN = getenv(
 
 # ------------------------------------------------------------------------
 # -------------------------------------------------------------------------
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/Zyro_Network")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/+HP8Ug5n1jXIyOTU9")
+SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/destrroyerofworldd")
+SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/+pOu46AYFwe4zMjJl")
 # ------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------
 
